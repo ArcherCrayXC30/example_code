@@ -1,26 +1,22 @@
-import * as R from 'ramda';
+import { createSelector } from 'redux-orm';
+import orm from './index';
 
-/**
- * Removes from the database all data referenced using virtual fields from an input object
- * NOTE: cache is required to handle cyclic references (e.g. Dish and DishGroup)
- */
-const removeRelated = (item, cache) => {
-  R.forEachObjIndexed((_, fieldKey) => {
-    R.forEach((relatedItem) => {
-      const model = relatedItem.getClass();
-      if (!cache.has(model)) {
-        cache.set(model, new Set());
-      }
-      const set = cache.get(model);
-      if (set.has(relatedItem.key)) {
-        return; // this item is already scheduled for removal or removed
-      }
-      set.add(relatedItem.key);
-      removeRelated(relatedItem, cache);
-      relatedItem.delete();
-    }, item[fieldKey].toModelArray());
-  }, item.getClass().virtualFields);
-};
+export const properties = createSelector(orm.Property);
+export const clients = createSelector(orm.Client);
 
-export default item =>
-  removeRelated(item, new Map());
+export const locations = createSelector(orm.Location);
+export const directions = createSelector(
+  orm,
+  (session) => session.Location.all().toRefArray().filter((item) => !item.capital),
+);
+export const deals = createSelector(orm.Deal);
+
+export const openDeals = createSelector(
+  orm,
+  (session) => session.Deal.all().toRefArray().filter((item) => item.status === 0),
+);
+
+export const defferDeals = createSelector(
+  orm,
+  (session) => session.Deal.all().toRefArray().filter((item) => item.status === 1),
+);
